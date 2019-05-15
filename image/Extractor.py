@@ -8,17 +8,18 @@ import progressbar
 from redis import Redis
 from pathlib import Path
 
-from risks.BioDiversity import BioDiversity
-from risks.Carbon import Carbon
-from risks.Experiential import Experiential
-from risks.Hydrology import Hydrology
-from risks.ImplementationCost import ImplementationCost
-from risks.MetricAdaptor import MetricAdaptor
-from risks.PeopleHousesInfrastructure import PeopleHousesInfrastructure
-from risks.Recreational import Recreational
-from risks.RegionalEconomy import RegionalEconomy
+from apps.BioDiversity import BioDiversity
+from apps.Carbon import Carbon
+from apps.Experiential import Experiential
+from apps.Hydrology import Hydrology
+from apps.ImplementationCost import ImplementationCost
+from apps.MetricAdaptor import MetricAdaptor
+from apps.PeopleHouses import PeopleHouses
+from apps.Infrastructure import Infrastructure
+from apps.Recreational import Recreational
+from apps.RegionalEconomy import RegionalEconomy
 
-from risks.util import Util
+from apps.util import Util
 
 import logging
 # Some application level constants
@@ -66,7 +67,7 @@ def main(args):
 
     pb_selection_complete = False
 
-    while len(pb_levels)==0 or not pb_selection_complete:
+    while len(pb_levels) == 0 or not pb_selection_complete:
         Util.clear()
         Util.program_header()
         print('We will parse the following FROST outputs:')
@@ -86,7 +87,7 @@ def main(args):
         inbuf = input('Enter PB levels to extract [Enter to continue]: ')
         # Check for empty Input
         if inbuf == "":
-            pb_selection_complete=True
+            pb_selection_complete = True
         else:
             # validate input
             try:
@@ -124,23 +125,35 @@ def main(args):
                                                                    rinfo['role'],
                                                                    rinfo['redis_version'],
                                                                    rinfo['tcp_port']
-                ))
+                                                                   ))
                 print(">> Connection Succeeded.")
                 print(">> Extracted Data will be stored on '%s'" % (REDIS_HOST))
                 redis_configured = True
+            else:
+                print(">> Connection Test Failed!")
 
     except ConnectionError as e:
         print(e)
 
     schemas = [
-        MetricAdaptor(BioDiversity(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(Carbon(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(Experiential(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(Hydrology(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(ImplementationCost(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(PeopleHousesInfrastructure(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(Recreational(args.path, args.name, redis), extract='load', question='question'),
-        MetricAdaptor(RegionalEconomy(args.path, args.name, redis), extract='load', question='question'),
+        MetricAdaptor(BioDiversity(args.path, args.name, redis),
+                      extract='load', question='question'),
+        MetricAdaptor(Carbon(args.path, args.name, redis),
+                      extract='load', question='question'),
+        MetricAdaptor(Experiential(args.path, args.name, redis),
+                      extract='load', question='question'),
+        MetricAdaptor(Hydrology(args.path, args.name, redis),
+                      extract='load', question='question'),
+        MetricAdaptor(ImplementationCost(args.path, args.name,
+                                         redis), extract='load', question='question'),
+        MetricAdaptor(PeopleHouses(
+            args.path, args.name, redis), extract='load', question='question'),
+        MetricAdaptor(Infrastructure(
+            args.path, args.name, redis), extract='load', question='question'),
+        MetricAdaptor(Recreational(args.path, args.name, redis),
+                      extract='load', question='question'),
+        MetricAdaptor(RegionalEconomy(args.path, args.name, redis),
+                      extract='load', question='question'),
     ]
 
     Util.answer_binary_questions(schemas)
@@ -152,10 +165,8 @@ def main(args):
 
     print("Extracting from %d Prescribed Burn Levels for:" % len(pb_levels))
     Util.rule()
-    [print("%d. %s\n" % (i+1,m)) for i,m in enumerate(metrics)]
+    [print("%d. %s\n" % (i + 1, m)) for i, m in enumerate(metrics)]
     Util.rule()
-
-
 
     # Logging configuration
     LOG_PATH = Path(args.path).joinpath(EXTRACTION_LOG)
@@ -168,7 +179,7 @@ def main(args):
     print("Starting Extraction")
     Util.rule()
 
-    widgets=[
+    widgets = [
         ' [Total ', progressbar.Timer(), ' ] ',
         progressbar.Bar(),
         ' (', progressbar.ETA(), ') ',
@@ -191,13 +202,18 @@ def main(args):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(prog='Extractor.py', usage='%(prog)s [options]', description="Extract Web-Ready Data from Frost Post-Processing Outputs")
+    parser = argparse.ArgumentParser(
+        prog='Extractor.py', usage='%(prog)s [options]', description="Extract Web-Ready Data from Frost Post-Processing Outputs")
     parser.add_argument("path", help="Frost Outputs Path (our Input data).")
     parser.add_argument("name", help="Simulation Name")
-    parser.add_argument("lvls", help="The Prescribed Burn Levels to extract as comma separated list.")
+    parser.add_argument(
+        "lvls", help="The Prescribed Burn Levels to extract as comma separated list.")
     required = parser.add_argument_group()
-    required.add_argument("-o", "--output-path", help="Where to store outputs.")
+    required.add_argument("-o", "--output-path",
+                          help="Where to store outputs.")
     optional = parser.add_argument_group()
-    optional.add_argument("-y", "--yes", help="Accept defaults automatically", action="store_true")
-    optional.add_argument("-v", "--verbose", help="Increase output verbosity.", action="store_true")
+    optional.add_argument(
+        "-y", "--yes", help="Accept defaults automatically", action="store_true")
+    optional.add_argument(
+        "-v", "--verbose", help="Increase output verbosity.", action="store_true")
     main(parser.parse_args())
