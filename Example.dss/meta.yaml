@@ -1,0 +1,14 @@
+extension: dss
+levels:
+- 0
+- 1
+- 2
+- 3
+- 5
+- 10
+metric_evaluation: /nfs/pyromancer/SharedData/regsimout/centralhigh22nov2018/
+name: Example
+output_folder_name: post_processing_output
+path: /media/arawlins/Olympic/DSS_DASH/MetricsDashboard
+project_extension: .frost.proj
+version: '1.0'
