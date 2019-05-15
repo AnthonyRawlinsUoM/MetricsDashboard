@@ -84,7 +84,7 @@ class PeopleHouses:
             logger.debug('>>>>> Loading PH Data from: %s' % b_id)
             scn = str(Path(self.path).joinpath(
                 self.scenario_name).joinpath(
-                    self.scenario_name)) + "_{}*".format(pb)
+                    self.scenario_name)) + "_{}pb".format(pb)
             logger.debug('Built the search in: %s' % scn)
 
             batch_list = sorted(glob(
