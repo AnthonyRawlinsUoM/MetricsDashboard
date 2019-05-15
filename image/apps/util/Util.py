@@ -95,7 +95,7 @@ def hash_key(item):
 
 
 def bid(p):
-    return p.split('_batch_')[-1].split('/')[0]
+    return p.split('pb')[-1].split('/')[0]
 
 
 def batch_id(p):
