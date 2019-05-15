@@ -26,7 +26,7 @@ import plotly.graph_objs as go
 import logging
 logger = logging.getLogger(__name__)
 
-phib_db_sql = """
+phb_db_sql = """
 SELECT * FROM PeopleHouseLoss
 """
 
@@ -81,13 +81,14 @@ class PeopleHouses:
                 logger.debug('>>> Will save %s' % self.name)
 
             b_id = Util.bid(self.path)
-            logger.debug('>>>>> Loading PHI Data from: %s' % b_id)
+            logger.debug('>>>>> Loading PH Data from: %s' % b_id)
             scn = str(Path(self.path).joinpath(
-                self.scenario_name)) + "_{}*".format(pb)
+                self.scenario_name).joinpath(
+                    self.scenario_name)) + "_{}*".format(pb)
             logger.debug('Built the search in: %s' % scn)
 
             batch_list = sorted(glob(
-                scn + "/centralhigh_*/post_processing_output/phibc_post_proc_results.sqlite"))
+                scn + "/*/post_processing_output/phibc_post_proc_results.sqlite"))
             [logger.debug('Found BatchList: %s' % b) for b in batch_list]
 
             batch_runs = sorted([Util.bid(b) for b in batch_list], key=int)
@@ -96,19 +97,22 @@ class PeopleHouses:
 
             for bat in batch_list:
                 logger.debug('>>>> Loading: %s' % bat)
-                df = Util.load_db_as_pandas(bat, phib_db_sql)
+                df = Util.load_db_as_pandas(bat, phb_db_sql)
                 if df is not None:
                     df['batch_id'] = b_id
                     df.reset_index()
                     _to.append(df)
             if saving:
-                ds = pd.concat(_to)
-                # ds = xr.open_mfdataset()
-                ncname = 'ph_%s.nc' % pb
-                ncpath = str(Path(self.path).joinpath(ncname))
-                ds.to_xarray().to_netcdf(ncpath, format='NETCDF4')
-                logger.info('Wrote %s to %s' % (ncname, self.path))
-                ds.to_csv(str(Path(self.path).joinpath('ph_%s.csv' % pb)))
+                if len(_to) > 0:
+                    ds = pd.concat(_to)
+                    # ds = xr.open_mfdataset()
+                    ncname = 'ph_%s.nc' % pb
+                    ncpath = str(Path(self.path).joinpath(ncname))
+                    ds.to_xarray().to_netcdf(ncpath, format='NETCDF4')
+                    logger.info('Wrote %s to %s' % (ncname, self.path))
+                    ds.to_csv(str(Path(self.path).joinpath('ph_%s.csv' % pb)))
+                else:
+                    print("Empty")
 
     def question(self):
         return "Would you like to extract {} Metrics?".format(self.name)

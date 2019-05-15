@@ -51,8 +51,9 @@ def main(args):
         raise Exception("The root path is not readable.")
 
     # Check existence of PB levels subfolders
+    # sorted_pb_list = Util.get_pb_levels(args.path, args.name)
 
-    sorted_pb_list = Util.get_pb_levels(args.path, args.name)
+    sorted_pb_list = ["PB_0", "PB_1", "PB_2", "PB_3", "PB_5", "PB_10"]
 
     # print('Found the following FROST outputs:')
     # [print('PB level: %s' % (i.split('_')[-1])) for i in sorted_pb_list]
@@ -71,7 +72,6 @@ def main(args):
         Util.clear()
         Util.program_header()
         print('We will parse the following FROST outputs:')
-        print()
         for i in sorted_pb_list:
             lvl = int(i.split('_')[-1])
             if lvl in pb_levels:
@@ -91,7 +91,7 @@ def main(args):
         else:
             # validate input
             try:
-                if inbuf in sorted_pb_list:
+                if "PB_" + str(inbuf) in sorted_pb_list:
                     pb_levels.append(int(inbuf))
                 else:
                     print("Not a valid option, try again.")
@@ -101,7 +101,7 @@ def main(args):
     redis = None
     redis_configured = False
     try:
-        redis = Redis(host=os.environ['REDIS_HOST'], port=6379)
+        redis = Redis(host=os.environ['REDIS_HOST'], port=6380)
     except KeyError as e:
         print(e)
     try:
@@ -110,13 +110,13 @@ def main(args):
             Util.program_header()
             print("Enter the HOST ADDRESS for the REDIS server:")
             Util.rule()
-            REDIS_HOST = "localhost"
+            REDIS_HOST = "redis.cloud.bushfirebehaviour.net.au"
             inbuf = input("[Default (%s)]: " % REDIS_HOST)
             if inbuf != "":
                 REDIS_HOST = inbuf
             # Test Connection
 
-            redis = Redis(host=REDIS_HOST, port=6379)
+            redis = Redis(host=REDIS_HOST, port=6380)
             if redis.set('test', 1234):
                 rinfo = redis.info()
                 Util.clear()
