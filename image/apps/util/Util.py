@@ -1,22 +1,27 @@
-import pyproj
-import datetime
-import os
-import math
-import pandas as pd
-import numpy as np
-import sqlite3
-from pathlib import Path
+
+from dash.dependencies import Input, Output
 from glob import glob as glob
-import xarray as xr
-import shutil
+from pathlib import Path
 
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+import datetime
+import math
+import numpy as np
+import os
+import pandas as pd
+import pyproj
+import shutil
+import sqlite3
+import xarray as xr
+import xml.etree.ElementTree
 
 import logging
 logger = logging.getLogger(__name__)
 
+
+PPO_FOLDER = "post_processing_output"
+PHI_FILE = "phibc_post_proc_results.sqlite"
 
 epsg3857 = pyproj.Proj("+init=EPSG:3857")
 vicgrid94 = pyproj.Proj("+init=EPSG:3111")
@@ -43,14 +48,14 @@ def convert_simcell_index_to_cell_polygon(df, column, rows, cols, left, bottom, 
 
     return [
         [pyproj.transform(vicgrid94, wgs84, left + (x[0] * cell_size),     bottom - (y[0] * cell_size)),
+         pyproj.transform(vicgrid94, wgs84, left
+                          + ((x[0] - 1) * cell_size), bottom - (y[0] * cell_size)),
          pyproj.transform(vicgrid94, wgs84, left +
-                          ((x[0] - 1) * cell_size), bottom - (y[0] * cell_size)),
-         pyproj.transform(vicgrid94, wgs84, left
-                          + ((x[0] - 1) * cell_size), bottom - ((y[0] + 1) * cell_size)),
-         pyproj.transform(vicgrid94, wgs84, left
-                          + (x[0] * cell_size),     bottom - ((y[0] + 1) * cell_size)),
-         pyproj.transform(vicgrid94, wgs84, left
-                          + (x[0] * cell_size),     bottom - (y[0] * cell_size))
+                          ((x[0] - 1) * cell_size), bottom - ((y[0] + 1) * cell_size)),
+         pyproj.transform(vicgrid94, wgs84, left +
+                          (x[0] * cell_size),     bottom - ((y[0] + 1) * cell_size)),
+         pyproj.transform(vicgrid94, wgs84, left +
+                          (x[0] * cell_size),     bottom - (y[0] * cell_size))
          ] for (x, y) in [np.divmod(a, cols) for a in i]
     ]
 
@@ -188,3 +193,57 @@ def generate_table(dataframe, max_rows=10):
             html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
         ]) for i in range(min(len(dataframe), max_rows))]
     )
+
+
+def parse_proj_xml(resource):
+    obj = untangle.parse(resource)
+    return obj
+
+
+def pb_suffix(pb):
+    return "_{}pb".format(pb)
+
+
+def batch_subfolder(scenario_name, pb):
+    return scenario_name.replace('2018', '18') + pb_suffix(pb) + "*"
+
+
+def activate(schemas, n):
+    [s for s in schemas if s.name == n][0].active = True
+    for s in schemas:
+        if s.name != n:
+            s.active = False
+
+
+def batch_from_path(bat):
+    return int(bat.split('/')[-3].split('pb')[-1])
+
+
+def parse_proj_xml(batch_folder, scenario_name, batch, pb):
+        # Project XML
+    proj_file = scenario_name.replace(
+        '2018', '18') + pb_suffix(pb) + format(batch, "03d") + ".frost.proj"
+
+    # Determine Path to Project XML file
+    path_to_proj = str(Path(batch_folder).joinpath(proj_file))
+
+    if not Path(path_to_proj).is_file():
+        print('Project folders path to Project File not found.')
+
+    e = xml.etree.ElementTree.parse(path_to_proj).getroot()
+    return e
+
+
+def gather_ppo_dbs(root, scenario_name, pb):
+    """
+    """
+
+    # Folder heirarchy conventions
+    heirarchy = Path(root).joinpath(scenario_name).joinpath(scenario_name + pb_suffix(pb)
+                                                            ).joinpath(batch_subfolder(scenario_name, pb))
+
+    search = str(heirarchy.joinpath(PPO_FOLDER).joinpath(PHI_FILE))
+
+    print("Looking in: %s" % (search))
+    # Get all paths
+    return sorted(glob(search))
