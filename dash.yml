@@ -11,12 +11,24 @@ services:
             update_config:
                 parallelism: 2
                 delay: 10s
+            labels:
+              - traefik.backend.loadbalancer.swarm=true
+              - traefik.docker.network=staging-network
+              - traefik.enable=true
+              - traefik.frontend.passHostHeader=true
+              - traefik.frontend.rule=Host:redis.cloud.bushfirebehaviour.net.au
+              - traefik.port=6379
+              - traefik.redirectorservice.frontend.entryPoints=http
+              - traefik.redirectorservice.frontend.redirect.entryPoint=https
+              - traefik.tags=staging-network
+              - traefik.webservice.frontend.entryPoints=https
         volumes:
-          - /nfs/pyromancer/Projects/Landscape_Fuel_Moisture_Project/data/redis/data:/data
+          - /nfs/pyromancer/Projects/DSS/data/redis/data:/data
         ports:
           - 6380:6379
         networks:
           - dash
+          - staging-network
           
     dash:
         image: anthonyrawlinsuom/dssh
